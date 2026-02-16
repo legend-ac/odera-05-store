@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========== FUNCIONES AUXILIARES ==========
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.admin == true;
+    }
+    
+    // ========== PRODUCTOS ==========
+    
+    match /products/{productId} {
+      // Lectura: solo productos activos (público)
+      allow read: if resource.data.status == 'active';
+      
+      // Escritura: SOLO ADMINISTRADORES
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // ========== PEDIDOS ==========
+    
+    match /orders/{orderId} {
+      // 🔒 CRÍTICO: Cliente NO puede escribir directamente
+      // Solo API Routes del servidor pueden crear/modificar
+      allow create, update, delete: if false;
+      
+      // Lectura: solo admin o el cliente con el teléfono del pedido
+      allow read: if isAdmin() || 
+                     (isAuthenticated() && request.auth.token.phone_number == resource.data.customer.phone);
+      
+      // Lectura pública solo con código público (para tracking)
+      allow get: if request.query.publicCode == resource.data.publicCode;
+    }
+    
+    // ========== AUDIT LOGS ==========
+    
+    match /auditLogs/{logId} {
+      // 🔒 CRÍTICO: SOLO servidor puede escribir
+      allow create, update, delete: if false;
+      
+      // Lectura: solo administradores
+      allow read: if isAdmin();
+    }
+    
+    // ========== PAYMENT OPS ==========
+    
+    match /paymentOps/{opId} {
+      // Cliente NO puede crear directamente (anti-fraude)
+      allow create, update, delete: if false;
+      
+      // Lectura: solo admin
+      allow read: if isAdmin();
+    }
+    
+    // ========== IDEMPOTENCY ==========
+    
+    match /idempotency/{key} {
+      // Solo servidor escribe
+      allow create, update, delete: if false;
+      
+      // Sin lectura cliente
+      allow read: if false;
+    }
+    
+    // ========== RATE LIMITS ==========
+    
+    match /rateLimits/{key} {
+      // Solo servidor escribe
+      allow create, update, delete: if false;
+      
+      // Sin lectura cliente
+      allow read: if false;
+    }
+    
+    // ========== STOCK LOGS ==========
+    
+    match /stockLogs/{logId} {
+      // Solo servidor escribe
+      allow create, update, delete: if false;
+      
+      // Lectura: solo admin
+      allow read: if isAdmin();
+    }
+    
+    // ========== COUNTERS ==========
+    
+    match /counters/{counterId} {
+      // Solo servidor modifica
+      allow create, update, delete: if false;
+      
+      // Sin lectura
+      allow read: if false;
+    }
+    
+    // ========== SETTINGS ==========
+    
+    match /settings/{doc} {
+      // Lectura pública (para zonaje, etc)
+      allow read: if true;
+      
+      // Escritura: solo admin
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}

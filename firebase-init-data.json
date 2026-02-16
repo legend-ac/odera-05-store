@@ -1,0 +1,62 @@
+{
+    "settings": {
+        "store": {
+            "storeName": "ODERA 05 STORE",
+            "whatsapp": "+51 916 305 297",
+            "whatsappRaw": "51916305297",
+            "email": "contacto@odera05.com",
+            "social": {
+                "instagram": "https://www.instagram.com/paso_urbano_pe/",
+                "tiktok": "https://www.tiktok.com/@pas.urbano",
+                "facebook": ""
+            },
+            "delivery": {
+                "enabled": true,
+                "cost": 20,
+                "freeThreshold": 200,
+                "districts": [
+                    "Los Olivos",
+                    "San Martín de Porres",
+                    "Independencia",
+                    "Comas",
+                    "Puente Piedra",
+                    "Carabayllo"
+                ]
+            },
+            "yape": {
+                "enabled": true,
+                "number": "962266349",
+                "holder": "Andy Cordova",
+                "qrCodeUrl": ""
+            },
+            "plin": {
+                "enabled": true,
+                "number": "962266349",
+                "holder": "Andy Cordova"
+            },
+            "businessHours": {
+                "monday": "9:00 AM - 8:00 PM",
+                "tuesday": "9:00 AM - 8:00 PM",
+                "wednesday": "9:00 AM - 8:00 PM",
+                "thursday": "9:00 AM - 8:00 PM",
+                "friday": "9:00 AM - 8:00 PM",
+                "saturday": "9:00 AM - 6:00 PM",
+                "sunday": "Cerrado"
+            },
+            "maintenance": {
+                "enabled": false,
+                "message": "Estamos en mantenimiento. Volvemos pronto."
+            }
+        }
+    },
+    "counters": {
+        "orders": {
+            "seq": 0,
+            "lastUpdated": null
+        },
+        "products": {
+            "seq": 0,
+            "lastUpdated": null
+        }
+    }
+}

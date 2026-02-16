@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Cloud Functions - ODERA 05</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #111;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+        }
+
+        .section h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        button {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #333;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .output {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #16a34a;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .info {
+            color: #2563eb;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 Test Cloud Functions</h1>
+        <p class="subtitle">Testing local con Firebase Emulators</p>
+
+        <!-- Test 1: createOrder -->
+        <div class="section">
+            <h2>1. Test createOrder()</h2>
+            <div class="form-group">
+                <label>Nombre Cliente:</label>
+                <input type="text" id="customerName" value="Test User" />
+            </div>
+            <div class="form-group">
+                <label>Teléfono (9 dígitos):</label>
+                <input type="text" id="customerPhone" value="987654321" />
+            </div>
+            <div class="form-group">
+                <label>Email (opcional):</label>
+                <input type="email" id="customerEmail" value="test@example.com" />
+            </div>
+            <div class="form-group">
+                <label>Tipo de Envío:</label>
+                <select id="shippingType">
+                    <option value="DELIVERY">Delivery</option>
+                    <option value="AGENCY_COLLECT">Agencia</option>
+                </select>
+            </div>
+            <button onclick="testCreateOrder()">🚀 Crear Orden de Test</button>
+            <div id="output1" class="output" style="display:none;"></div>
+        </div>
+
+        <!-- Test 2: submitPayment -->
+        <div class="section">
+            <h2>2. Test submitPayment()</h2>
+            <div class="form-group">
+                <label>Order ID:</label>
+                <input type="text" id="orderId" placeholder="Se llenará después de crear orden" />
+            </div>
+            <div class="form-group">
+                <label>Código de Operación:</label>
+                <input type="text" id="operationCode" value="TEST-001" />
+            </div>
+            <button onclick="testSubmitPayment()">💳 Enviar Código Pago</button>
+            <div id="output2" class="output" style="display:none;"></div>
+        </div>
+
+        <!-- Test 3: Check Order Status -->
+        <div class="section">
+            <h2>3. Verificar Estado de Orden</h2>
+            <button onclick="checkOrderStatus()">🔍 Ver Estado</button>
+            <button onclick="listAllOrders()">📋 Listar Todas las Órdenes</button>
+            <div id="output3" class="output" style="display:none;"></div>
+        </div>
+
+        <!-- Test 4: Anti-fraude -->
+        <div class="section">
+            <h2>4. Test Anti-fraude (Código Duplicado)</h2>
+            <button onclick="testDuplicateCode()">⚠️ Probar Código Duplicado</button>
+            <div id="output4" class="output" style="display:none;"></div>
+        </div>
+
+        <!-- Status -->
+        <div class="section">
+            <h2>📊 Estado del Sistema</h2>
+            <p id="emulatorStatus" class="info">Verificando conexión con emulators...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
+        import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-functions.js';
+        import { connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore.js';
+
+        // Configuración Firebase (emulators)
+        const firebaseConfig = {
+            apiKey: "demo-key",
+            authDomain: "demo-project.firebaseapp.com",
+            projectId: "demo-project",
+            storageBucket: "demo-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const functions = getFunctions(app);
+
+        // Conectar a emulators
+        connectFirestoreEmulator(db, 'localhost', 8080);
+        connectFunctionsEmulator(functions, 'localhost', 5001);
+
+        console.log('✅ Conectado a Firebase Emulators');
+        document.getElementById('emulatorStatus').textContent = '✅ Conectado a Firebase Emulators (Firestore: 8080, Functions: 5001)';
+        document.getElementById('emulatorStatus').className = 'success';
+
+        let lastOrderId = null;
+
+        // Test 1: createOrder
+        window.testCreateOrder = async function () {
+            const output = document.getElementById('output1');
+            output.style.display = 'block';
+            output.textContent = '⏳ Creando orden...';
+
+            try {
+                const createOrder = httpsCallable(functions, 'createOrder');
+
+                const result = await createOrder({
+                    customer: {
+                        name: document.getElementById('customerName').value,
+                        phone: document.getElementById('customerPhone').value,
+                        email: document.getElementById('customerEmail').value || undefined,
+                    },
+                    items: [
+                        {
+                            productId: 'test-product-1',
+                            variantId: 'variant-1',
+                            quantity: 2,
+                        }
+                    ],
+                    shippingType: document.getElementById('shippingType').value,
+                    shippingInfo: document.getElementById('shippingType').value === 'DELIVERY' ? {
+                        type: 'DELIVERY',
+                        district: 'Los Olivos',
+                        address: 'Av. Test 123',
+                        reference: 'Casa azul',
+                    } : {
+                        type: 'AGENCY_COLLECT',
+                        department: 'Lima',
+                        province: 'Lima',
+                        district: 'San Juan de Lurigancho',
+                        dni: '12345678',
+                        agency: 'Shalom',
+                        customerAccepted: true,
+                    },
+                    paymentMethod: 'yape',
+                    customerNotes: 'Test order from emulator',
+                });
+
+                lastOrderId = result.data.order.orderId;
+                document.getElementById('orderId').value = lastOrderId;
+
+                output.className = 'output success';
+                output.textContent = `✅ ORDEN CREADA\n\n` +
+                    `Order ID: ${result.data.order.orderId}\n` +
+                    `Código Público: ${result.data.order.publicCode}\n` +
+                    `Total: S/ ${result.data.order.total.toFixed(2)}\n\n` +
+                    JSON.stringify(result.data, null, 2);
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `❌ ERROR\n\n${error.message}\n\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+
+        // Test 2: submitPayment
+        window.testSubmitPayment = async function () {
+            const output = document.getElementById('output2');
+            output.style.display = 'block';
+            output.textContent = '⏳ Enviando código de pago...';
+
+            const orderId = document.getElementById('orderId').value;
+            const operationCode = document.getElementById('operationCode').value;
+
+            if (!orderId) {
+                output.className = 'output error';
+                output.textContent = '❌ ERROR: Primero crea una orden';
+                return;
+            }
+
+            try {
+                const submitPayment = httpsCallable(functions, 'submitPayment');
+                const result = await submitPayment({ orderId, operationCode });
+
+                output.className = 'output success';
+                output.textContent = `✅ CÓDIGO REGISTRADO\n\n${JSON.stringify(result.data, null, 2)}`;
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `❌ ERROR\n\n${error.message}\n\n${JSON.stringify(error, null, 2)}`;
+            }
+        };
+
+        // Test 3: Check status
+        window.checkOrderStatus = async function () {
+            const output = document.getElementById('output3');
+            output.style.display = 'block';
+            output.textContent = '⏳ Verificando estado...';
+
+            const orderId = document.getElementById('orderId').value;
+            if (!orderId) {
+                output.className = 'output error';
+                output.textContent = '❌ ERROR: No hay Order ID';
+                return;
+            }
+
+            try {
+                const orderDoc = await getDoc(doc(db, 'orders', orderId));
+                if (orderDoc.exists()) {
+                    const data = orderDoc.data();
+                    output.className = 'output success';
+                    output.textContent = `✅ ORDEN ENCONTRADA\n\n` +
+                        `Código: ${data.publicCode}\n` +
+                        `Estado: ${data.status}\n` +
+                        `Total: S/ ${data.total}\n` +
+                        `Reservado Hasta: ${data.reservedUntil?.toDate()}\n\n` +
+                        JSON.stringify(data, null, 2);
+                } else {
+                    output.className = 'output error';
+                    output.textContent = '❌ Orden no encontrada';
+                }
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `❌ ERROR\n\n${error.message}`;
+            }
+        };
+
+        window.listAllOrders = async function () {
+            const output = document.getElementById('output3');
+            output.style.display = 'block';
+            output.textContent = '⏳ Listando órdenes...';
+
+            try {
+                const snapshot = await getDocs(collection(db, 'orders'));
+                const orders = [];
+                snapshot.forEach(doc => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+
+                output.className = 'output success';
+                output.textContent = `✅ ${orders.length} ÓRDENES ENCONTRADAS\n\n` +
+                    orders.map(o => `${o.publicCode} - ${o.status} - S/${o.total}`).join('\n');
+            } catch (error) {
+                output.className = 'output error';
+                output.textContent = `❌ ERROR\n\n${error.message}`;
+            }
+        };
+
+        // Test 4: Anti-fraude
+        window.testDuplicateCode = async function () {
+            const output = document.getElementById('output4');
+            output.style.display = 'block';
+            output.textContent = '⏳ Probando código duplicado...';
+
+            const orderId = document.getElementById('orderId').value;
+            const operationCode = document.getElementById('operationCode').value;
+
+            if (!orderId) {
+                output.className = 'output error';
+                output.textContent = '❌ ERROR: Primero crea una orden y envía un código';
+                return;
+            }
+
+            try {
+                const submitPayment = httpsCallable(functions, 'submitPayment');
+                await submitPayment({ orderId, operationCode });
+
+                output.className = 'output error';
+                output.textContent = '❌ FALLÓ: El código duplicado no fue rechazado';
+            } catch (error) {
+                if (error.code === 'already-exists') {
+                    output.className = 'output success';
+                    output.textContent = `✅ ANTI-FRAUDE FUNCIONA\n\nEl código duplicado fue rechazado correctamente:\n${error.message}`;
+                } else {
+                    output.className = 'output error';
+                    output.textContent = `❌ ERROR INESPERADO\n\n${error.message}`;
+                }
+            }
+        };
+    </script>
+</body>
+
+</html>
