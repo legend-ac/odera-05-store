@@ -1,10 +1,7 @@
 // lib/firebase/config.ts
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-// TEMPORAL: Comentado para fix Vercel build (undici error)
-// import { getStorage } from 'firebase/storage';
-// import { getFunctions } from 'firebase/functions';
+// REMOVED: Firestore, Storage, Functions (now using API routes with Admin SDK)
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 const firebaseConfig = {
@@ -19,12 +16,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize services
+// Initialize services (AUTH ONLY - rest via API routes)
 export const auth = getAuth(app);
-export const db = getFirestore(app);
-// TEMPORAL: Comentado para fix Vercel build
-// export const storage = getStorage(app);
-// export const functions = getFunctions(app);
+// Removed: db, storage, functions (now server-side via API routes)
 
 // Initialize App Check (production only)
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
