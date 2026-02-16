@@ -2,8 +2,9 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getFunctions } from 'firebase/functions';
+// TEMPORAL: Comentado para fix Vercel build (undici error)
+// import { getStorage } from 'firebase/storage';
+// import { getFunctions } from 'firebase/functions';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 const firebaseConfig = {
@@ -21,8 +22,9 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 // Initialize services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
-export const functions = getFunctions(app);
+// TEMPORAL: Comentado para fix Vercel build
+// export const storage = getStorage(app);
+// export const functions = getFunctions(app);
 
 // Initialize App Check (production only)
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
